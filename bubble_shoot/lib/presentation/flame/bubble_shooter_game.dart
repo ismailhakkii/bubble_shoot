@@ -369,7 +369,6 @@ class BubbleShooterGame extends FlameGame {
   void _addAndCheckPop(Vector2 pos, Color color) {
     final isRainbow = color == Colors.white;
     final isExtraShot = color == Colors.orangeAccent;
-    // Taş ve buz balonları için tip belirle
     BubbleType type = BubbleType.normal;
     if (color == Colors.grey) type = BubbleType.stone;
     if (color == Colors.lightBlueAccent) type = BubbleType.ice;
@@ -393,12 +392,18 @@ class BubbleShooterGame extends FlameGame {
     for (final b in popped) {
       if (b.type == BubbleType.ice) {
         b.hitCount++;
-        if (b.hitCount < 2) continue; // İlk vuruşta sadece çatlat
+        if (b.hitCount < 2) continue;
       }
       b.pop();
     }
     if (popped.isNotEmpty) {
       score += popped.length * 10;
+      // Asılı kalan balonları bul ve düşür
+      final floating = _findFloatingBubbles();
+      for (final b in floating) {
+        b.pop();
+      }
+      score += floating.length * 15; // Düşen balonlar için ekstra puan
     }
     if (isExtraShot) {
       shotsLeft++;
@@ -433,6 +438,31 @@ class BubbleShooterGame extends FlameGame {
       if (group.length > largest.length) largest = group;
     }
     return largest;
+  }
+
+  // Tavana bağlı olmayan balonları bul
+  List<BubbleComponent> _findFloatingBubbles() {
+    final all = children.whereType<BubbleComponent>().toList();
+    final connected = <BubbleComponent>[];
+    // Tavana temas eden balonlardan DFS ile bağlı olanları bul
+    for (final b in all) {
+      if ((b.position.y - b.radius) <= (padding + 2)) {
+        _dfsFloating(b, all, connected);
+      }
+    }
+    // Bağlı olmayanlar floating
+    return all.where((b) => !connected.contains(b) && b.type != BubbleType.stone).toList();
+  }
+
+  void _dfsFloating(BubbleComponent bubble, List<BubbleComponent> all, List<BubbleComponent> connected) {
+    if (connected.contains(bubble)) return;
+    connected.add(bubble);
+    for (final other in all) {
+      if (!connected.contains(other) &&
+          (other.position - bubble.position).length <= bubble.radius * 2.1) {
+        _dfsFloating(other, all, connected);
+      }
+    }
   }
 
   void onTapDown(TapDownDetails details) {
