@@ -370,7 +370,6 @@ class BubbleShooterGame extends FlameGame {
     final isRainbow = color == Colors.white;
     final isExtraShot = color == Colors.orangeAccent;
     BubbleType type = BubbleType.normal;
-    if (color == Colors.grey) type = BubbleType.stone;
     if (color == Colors.lightBlueAccent) type = BubbleType.ice;
     final newBubble = BubbleComponent(
       position: pos,
@@ -387,8 +386,11 @@ class BubbleShooterGame extends FlameGame {
     } else {
       popped = _findConnectedBubbles(newBubble, gridBubbles);
     }
-    // Taş balonlar asla patlamaz, buz balonlar 2 vuruşta patlar
     popped = popped.where((b) => b.type != BubbleType.stone).toList();
+    if (popped.length < 2) {
+      // Yeterli grup yok, patlatma!
+      return;
+    }
     for (final b in popped) {
       if (b.type == BubbleType.ice) {
         b.hitCount++;
